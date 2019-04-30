@@ -3,15 +3,20 @@ var express = require('express');
 var path = require('path');
 var cookieParser = require('cookie-parser');
 var logger = require('morgan');
+var bodyParser = require('body-parser');
 
-var indexRouter = require('./routes/index');
-var usersRouter = require('./routes/users');
+var mongo = require('mongodb');
+var monk = require('monk');
+var db = monk('localhost:27017/assignment2');
+
+// var indexRouter = require('./routes/index');
+var socialservice = require('./routes/socialservice');
 
 var app = express();
 
 // view engine setup
 app.set('views', path.join(__dirname, 'views'));
-app.set('view engine', 'jade');
+app.set('view engine', 'pug');
 
 app.use(logger('dev'));
 app.use(express.json());
@@ -19,8 +24,14 @@ app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 
-app.use('/', indexRouter);
-app.use('/users', usersRouter);
+// Make our db accessible to routers
+app.use(function(req,res,next){
+  req.db = db;
+  next();
+});
+
+// app.use('/', indexRouter);
+app.use('/socialservice', socialservice);
 
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {
@@ -38,4 +49,9 @@ app.use(function(err, req, res, next) {
   res.render('error');
 });
 
-module.exports = app;
+// module.exports = app;
+var server = app.listen(3001, function(){
+  var host = server.address().address;
+  var port = server.address().port;
+  console.log("SocialService is listening at http://%s:%s", host, port);
+});
