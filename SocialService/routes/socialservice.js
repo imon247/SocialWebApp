@@ -1,13 +1,8 @@
 var express = require('express');
 var router = express.Router();
 
-/* handle preflighted request */
-router.options("/*", function(req, res, next){
-    res.header('Access-Control-Allow-Origin', 'http://localhost:3000');
-    res.header('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS');
-    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, Content-Length, X-Requested-With');
-    res.send(200);
-});
+var Day = ['Mon', 'Tue', 'Wed', 'Thur', 'Fri', 'Sat', 'Sun'];
+var Month = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
 router.post('/signin', function(req, res){
   var db = req.db;
@@ -34,15 +29,16 @@ router.post('/signin', function(req, res){
   // console.log("input password is: "+password);
   // var index;
   var filter = {"name": "imon247", "password": "985247"};
-  userList.find({}, {}, function(err, docs){
+  userList.find({}, {}, function(err, docs){              /* get all users */
     if(err===null){
       all_users = docs;
+      console.log(all_users);
     }
     else{
       res.send({msg: err});
     }
   }).then(function(){
-    postList.find({},{}, function(err, docs){
+    postList.aggregate([{$sort:{time: -1}}], function(err, docs){             /* get all posts */
       if(err===null){
         all_posts = docs;
         // console.log(all_posts);
@@ -52,7 +48,7 @@ router.post('/signin', function(req, res){
       }
     });
   }).then(function(){
-    commentList.find({}, {}, function(err, docs){
+    commentList.aggregate([{$sort:{postTime: -1}}], function(err, docs){         /* get all comments */
       if(err===null){
         all_comments = docs;
 
@@ -60,9 +56,12 @@ router.post('/signin', function(req, res){
         for(var i=0;i<all_users.length;i++){
           if(all_users[i].name===username && all_users[i].password===password){
             user = all_users[i];
+            // console.log(user);
             friends = all_users[i].friends;
             /* set cookie of the user */
             res.cookie('userId', user._id);
+            // console.log(friends);
+            console.log("set cookie succesfully: "+user._id);
             found = true;
           }
         }
@@ -122,18 +121,24 @@ router.post('/signin', function(req, res){
           console.log("\n\n\n");
           console.log(comments);
 
+          res.cookie("userId", user._id);
           res.send({
+            userId: user._id,
             name: user.name,
             icon: user.icon,
+            mobileNumber: user.mobileNumber,
+            homeNumber: user.homeNumber,
+            address: user.address,
             friends: friends,
             posts: posts,
             comments: comments,
           });
-
+          console.log("home number is: "+user.homeNumber);
 
         }
         else{
           console.log("not found!!!!!!");
+          res.send({msg:''});
         }
 
 
@@ -178,16 +183,17 @@ router.get('/getuserprofile', function(req, res){
   });
 });
 
-router.put('/saveuserprofile', function(req, res){
+router.post('/saveuserprofile', function(req, res){
   var db = req.db;
   var userList = db.get('userList');
-  res.set({"Access-Control-Allow-Origin": "http://localhost:3000"});
-  var userId = req.cookies['userId'];
-  var newMobileNumber = req.body.mobileNumber;
-  var newHomeNumber = req.body.homeNumber;
-  var newAddress = req.body.address;
+  res.set({"Access-Control-Allow-Origin": "http://localhost:3000",});
+  var userId = req.body.userId;
+  console.log("cookie is: "+ userId);
+  var newMobileNumber = req.body.newMobileNumber;
+  var newHomeNumber = req.body.newHomeNumber;
+  var newAddress = req.body.newAddress;
 
-  var filter = {"_id": ObjectId(userId)};
+  var filter = {"_id": userId};
   userList.update(filter,
                   {$set:
                     {"mobileNumber":newMobileNumber, "homeNumber":newHomeNumber, "address":newAddress}
@@ -195,9 +201,11 @@ router.put('/saveuserprofile', function(req, res){
                   function(err, result){
                     res.send((err === null) ? { msg: '' } : { msg: err });
                   });
+
+  // res.send({msg: 'hi!'});
   });
 
-router.get('/updatestar/:friendid', function(req, res){
+router.post('/updatestar/:friendid', function(req, res){
   var db = req.db;
   var userList = db.get('userList');
   var contactToUpdate = req.params.friendid;
@@ -205,56 +213,97 @@ router.get('/updatestar/:friendid', function(req, res){
       "Access-Control-Allow-Origin": "http://localhost:3000",
   });
 
-  var filter = {"_id": ObjectId(req.cookies['userId'])};
-  var friends = userList.findOne(filter).friends;
-  if(friends===null){
-    res.send({msg: "unable to find user!"});
-    return;
-  }
-
-  var index = -1;
-  for(var i=0;i<friends.length;i++){
-    if(friends[i].friendId === contactToUpdate){
-      index = i;
-      var previousStatus = friends[index].starredOrNot;
-      if(previousStatus==='Y'){ friends[index].starredOrNot = 'N'; }
-      else{ friends[index].starredOrNot = 'Y'; }
-      break;
+  console.log("friend is: "+req.params.friendid);
+  console.log("userId is: "+req.body.userId);
+  var targetFriend = req.params.friendid;
+  var filter = {"_id": req.body.userId};
+  var friends;
+  userList.findOne(filter, {}, function(err, docs){
+    if(err===null){
+      console.log("filter successfully!");
+      friends = docs.friends;
+      for(var i=0;i<friends.length;i++){
+        if(friends[i].friendId===targetFriend){
+          if(friends[i].starredOrNot==='Y'){
+            friends[i].starredOrNot = 'N';
+          }
+          else{
+            friends[i].starredOrNot = 'Y';
+          }
+          break;
+        }
+      }
+      userList.update(filter,
+                      {$set: {"friends": friends}},
+                      function(err, result){
+                        res.send((err===null) ? {msg: ''} : {msg: err});
+                      });
     }
-  }
-  if(index===-1){
-    res.send({msg: "unable to find friend ID!"});
-    return;
-  }
-
-  userList.update(filter,
-                  {
-                    $set: {"friends": friends}
-                  },
-                  function(err, result){
-                    res.send((err===null) ? {msg: ''} : {msg: err});
-                  });
+    else{
+      console.log("there is an error!");
+      res.send({msg: err});
+    }
+  });
+  // var filter = {"_id": ObjectId(req.cookies['userId'])};
+  // var friends = userList.findOne(filter).friends;
+  // if(friends===null){
+  //   res.send({msg: "unable to find user!"});
+  //   return;
+  // }
+  //
+  // var index = -1;
+  // for(var i=0;i<friends.length;i++){
+  //   if(friends[i].friendId === contactToUpdate){
+  //     index = i;
+  //     var previousStatus = friends[index].starredOrNot;
+  //     if(previousStatus==='Y'){ friends[index].starredOrNot = 'N'; }
+  //     else{ friends[index].starredOrNot = 'Y'; }
+  //     break;
+  //   }
+  // }
+  // if(index===-1){
+  //   res.send({msg: "unable to find friend ID!"});
+  //   return;
+  // }
+  //
+  // userList.update(filter,
+  //                 {
+  //                   $set: {"friends": friends}
+  //                 },
+  //                 function(err, result){
+  //                   res.send((err===null) ? {msg: ''} : {msg: err});
+  //                 });
 });
 
-router.post('/postcomment/:postid', function(req, res){
+router.post('/postcomment/:postid', function(req,res){
   var db = req.db;
   var commentList = db.get('commentList');
-  var userId = req.cookies['userId'];
+  console.log("errrrrr1");
+  var userId = req.body.userId;
+  console.log("errrrrr2");
+  var name = req.body.name;
+  console.log("errrrrr3");
   var postId = req.params.postid;
+  console.log("errrrrr4");
   var content = req.body.comment;
+  console.log("errrrrr5");
   var postTime = new Date();
-
   var comment = {
     "postId": postId,
     "userId": userId,
-    "postTime": postTime,
+    "postTime": postTime.getHours()+':'+postTime.getMinutes()+' ' + Day[postTime.getDay()] + ' ' + Month[postTime.getMonth()] + ' ' + postTime.getDate() + ' ' +postTime.getFullYear(),
     "content": content,
     "deleteTime": '',
   };
+  console.log("errrrrr6");
+
   commentList.insert(comment, function(err, result){
-    res.send((err===null) ? {msg: ''} : {msg: err});
+      res.send(
+          (err === null) ? { msg: '' } : { msg: err }
+      );
   });
 });
+
 
 router.delete('/deletecomment/:commentid', function(req, res){
   var db = req.db;
@@ -307,6 +356,20 @@ router.get('/loadcommentupdates', function(req, res){
 
   res.send({newComments: newComments,
             deletedComments: deletedComments});
+});
+
+
+
+
+
+
+
+/* handle preflighted request */
+router.options("/*", function(req, res, next){
+    res.header('Access-Control-Allow-Origin', 'http://localhost:3000');
+    res.header('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS');
+    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, Content-Length, X-Requested-With');
+    res.send(200);
 });
 
 module.exports = router;
