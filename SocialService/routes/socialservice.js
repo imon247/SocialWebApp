@@ -168,7 +168,7 @@ router.get('/getuserprofile', function(req, res){
   var userList = db.get('userList');
   res.set({"Access-Control-Allow-Origin": "http://localhost:3000"});
   var userId = req.cookies['userId'];
-  var filter = {"_id": ObjectId(userId)};
+  var filter = {"_id": userId};
   userList.findOne(filter, {}, function(err, result){
     if(err===null){
       res.send({
@@ -183,7 +183,7 @@ router.get('/getuserprofile', function(req, res){
   });
 });
 
-router.post('/saveuserprofile', function(req, res){
+router.put('/saveuserprofile', function(req, res){
   var db = req.db;
   var userList = db.get('userList');
   res.set({"Access-Control-Allow-Origin": "http://localhost:3000",});
@@ -202,7 +202,6 @@ router.post('/saveuserprofile', function(req, res){
                     res.send((err === null) ? { msg: '' } : { msg: err });
                   });
 
-  // res.send({msg: 'hi!'});
   });
 
 router.post('/updatestar/:friendid', function(req, res){
@@ -244,50 +243,19 @@ router.post('/updatestar/:friendid', function(req, res){
       res.send({msg: err});
     }
   });
-  // var filter = {"_id": ObjectId(req.cookies['userId'])};
-  // var friends = userList.findOne(filter).friends;
-  // if(friends===null){
-  //   res.send({msg: "unable to find user!"});
-  //   return;
-  // }
-  //
-  // var index = -1;
-  // for(var i=0;i<friends.length;i++){
-  //   if(friends[i].friendId === contactToUpdate){
-  //     index = i;
-  //     var previousStatus = friends[index].starredOrNot;
-  //     if(previousStatus==='Y'){ friends[index].starredOrNot = 'N'; }
-  //     else{ friends[index].starredOrNot = 'Y'; }
-  //     break;
-  //   }
-  // }
-  // if(index===-1){
-  //   res.send({msg: "unable to find friend ID!"});
-  //   return;
-  // }
-  //
-  // userList.update(filter,
-  //                 {
-  //                   $set: {"friends": friends}
-  //                 },
-  //                 function(err, result){
-  //                   res.send((err===null) ? {msg: ''} : {msg: err});
-  //                 });
 });
 
 router.post('/postcomment/:postid', function(req,res){
   var db = req.db;
   var commentList = db.get('commentList');
-  console.log("errrrrr1");
   var userId = req.body.userId;
-  console.log("errrrrr2");
   var name = req.body.name;
-  console.log("errrrrr3");
   var postId = req.params.postid;
-  console.log("errrrrr4");
-  var content = req.body.comment;
-  console.log("errrrrr5");
+  var content = req.body.content;
   var postTime = new Date();
+  res.set({
+      "Access-Control-Allow-Origin": "http://localhost:3000",
+  });
   var comment = {
     "postId": postId,
     "userId": userId,
@@ -295,12 +263,16 @@ router.post('/postcomment/:postid', function(req,res){
     "content": content,
     "deleteTime": '',
   };
-  console.log("errrrrr6");
 
   commentList.insert(comment, function(err, result){
-      res.send(
-          (err === null) ? { msg: '' } : { msg: err }
-      );
+    if(err===null){
+      console.log(result);
+      result.name = name
+      res.send({msg:'', result: result});
+    }
+    else{
+      res.send({msg: err});
+    }
   });
 });
 
@@ -309,7 +281,8 @@ router.delete('/deletecomment/:commentid', function(req, res){
   var db = req.db;
   var commentList = db.get('commentList');
   // var userId = req.cookies['userId'];
-  var filter = {"_id": ObjectId(req.params.commentid)};
+  var filter = {"_id": req.params.commentid};
+  res.set({"Access-Control-Allow-Origin": "http://localhost:3000"});
   commentList.update(filter,
                      {$set: {"deleteTime": new Date()}},
                      function(err, result){
@@ -318,6 +291,9 @@ router.delete('/deletecomment/:commentid', function(req, res){
                     );
 });
 
+
+
+/* to be implemented */
 router.get('/loadcommentupdates', function(req, res){
   var db = req.db;
   var commentList = db.get('commentList');
@@ -325,7 +301,7 @@ router.get('/loadcommentupdates', function(req, res){
   var postList = db.get('postList');
 
   // var newComments = [];
-  var target_user = userList.findOne({"_id": ObjectId(req.cookies['userId'])});
+  var target_user = userList.findOne({"_id": req.cookies['userId']});
   var lastCommentRetrievalTime = target_user.lastCommentRetrievalTime;
   var friends = target_user.friends;
   var post_ids = [];
@@ -352,7 +328,7 @@ router.get('/loadcommentupdates', function(req, res){
     }
   }
 
-  userList.update({"_id": ObjectId(req.cookies['userId'])}, {$set: {"lastCommentRetrievalTime": new Date()}});
+  userList.update({"_id": req.cookies['userId']}, {$set: {"lastCommentRetrievalTime": new Date()}});
 
   res.send({newComments: newComments,
             deletedComments: deletedComments});

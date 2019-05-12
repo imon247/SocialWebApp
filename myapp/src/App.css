@@ -1,40 +1,34 @@
-/* .App {
-  text-align: center;
+#wrapper {
+  display: block;
+  width: 100%;
 }
 
-.App-logo {
-  animation: App-logo-spin infinite 20s linear;
-  height: 40vmin;
-  pointer-events: none;
+#wrapper h2 {
+  font-size: 45px;
+  top: 20px;
+  left: 50%;
+  right: 50%;
+  font-family: monospace;
+  color: #2ba2c1
 }
 
-.App-header {
-  background-color: #282c34;
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  font-size: calc(10px + 2vmin);
-  color: white;
+#lower {
+  display: inline;
+  height: auto;
 }
-
-.App-link {
-  color: #61dafb;
-}
-
-@keyframes App-logo-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
-} */
 
 #starredFriends {
-  border: solid;
-  border-color: lightsalmon;
+  width: 25%;
+  float: left;
+  height: fill;
+  background-color: #cbf2c1;
+}
+
+#PostArea {
+  float: right;
+  padding: 10px;
+  padding-top: 0px;
+  width: 72%;
 }
 
 ul {
@@ -42,15 +36,217 @@ ul {
   font-family: monospace;
 }
 
+li {
+  margin-left: 30px;
+  margin-bottom: 10px;
+  font-size: 20px;
+}
+
 img {
   width: 45px;
   height: 45px;
 }
 
+#bar div{
+  display: inline;
+  /* border: dashed;
+  border-color: #5e7fb5;
+  width: 100%;
+  margin-bottom: 10px; */
+}
+
 #bar {
-  display: inline-block;
   border: dashed;
   border-color: #5e7fb5;
   width: 100%;
   margin-bottom: 10px;
+}
+
+.post{
+  /* display: block; */
+  font-family: sans-serif, fantasy;
+  margin-bottom: 15px;
+  /* padding-left: 10px; */
+}
+
+.comment {
+  background-color: #dddddd;
+  font-size: 15px;
+  padding-top: 10px;
+  padding-bottom: 10px;
+  padding-left: 5px;
+}
+
+.inputComment {
+  background-color: #dddddd;
+  padding-top: 10px;
+}
+
+#info .{
+  display: inline;
+}
+
+#barlogout {
+  float: right;
+  margin-top: 15px;
+  margin-right: 10px;
+}
+
+#barusername {
+  margin-left: 10px;
+  padding-bottom: 10px;
+  font-family: monospace, serif, fantasy;
+}
+
+.pt {
+  margin-top: 10px;
+  margin-right: 10px;
+  margin-left: 6px;
+  color: #555555;
+  font-size: 10px;
+
+}
+
+.pl {
+  color: #666666;
+  font-size: 10px;
+}
+
+.pn {
+  font-size: 15px;
+  margin-bottom: 5px;
+}
+
+.a {
+  background-color: #5ecccc;
+  margin-bottom: 0px;
+  height: 200px;
+}
+
+.a div{
+  display: inline-block;
+}
+
+.icon {
+  float: left;
+  height: 100px;
+  width: 20px;
+  margin-right: 35px;
+  margin-top: 5px;
+  margin-left: 5px;
+}
+
+.b {
+  float: left;
+  width: 300px;
+}
+
+.postContent {
+  font-size: 20px;
+}
+
+.cc {
+  margin-left: 5px;
+}
+
+.t {
+  color: #666666;
+}
+
+.star {
+  width: 25px;
+  height: 25px;
+  margin-left: 5px;
+  margin-bottom: -1px;
+}
+
+.inputComment {
+  padding-left: 10px;
+}
+
+.c {
+  width: 200px;
+  height: 18px;
+  margin-right: 5px;
+}
+
+#profile {
+  background-color: #5ecccc;
+}
+
+.barimg {
+  margin: 5px;
+  margin-bottom: 0px;
+}
+
+.barusername {
+  font-size: 20px;
+  font-family: monospace, sans-serif, fantasy;
+}
+
+#up {
+  margin-top: 20px;
+}
+
+#mn {
+  font-size: 15px;
+  font-family: fantasy;
+  margin-right: 5px;
+  margin-left: 5px;
+}
+
+#hn {
+  font-size: 15px;
+  font-family: fantasy;
+  margin-right: 5px;
+  margin-left: 5px;
+}
+
+#ma {
+  font-size: 15px;
+  font-family: fantasy;
+  margin-right: 5px;
+  margin-left: 5px;
+}
+
+#save {
+  margin-left: 10px;
+  margin-top: 5px;
+  margin-bottom: 10px;
+}
+
+input {
+  hright: 20px;
+}
+
+#signinform {
+    position: absolute;
+    top: 20%;
+    left: 36%;
+    margin-top: -50px;
+    margin-left: -50px;
+    width: 400px;
+    height: 150px;
+    border: solid;
+    border-radius: 3px;
+    border-color: lightgrey;
+    padding: 10px;
+}
+
+.un {
+  font-size: 15px;
+  font-family: fantasy;
+  margin-right: 5px;
+}
+
+.pw {
+  font-size: 15px;
+  font-family: fantasy;
+  margin-right: 5px;
+}
+
+#appname {
+  top: 100px;
+  left: 50%;
+  right: 50%;
 }

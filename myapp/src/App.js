@@ -25,7 +25,7 @@ class FrontApp extends React.Component {
     };
 
     this.handleComment = this.handleComment.bind(this);
-    // this.handleDeleteComment = this.handleDeleteComment.bind(this);
+    this.handleDelComment = this.handleDelComment.bind(this);
     this.inputUNChange = this.inputUNChange.bind(this);
     this.inputPWChange = this.inputPWChange.bind(this);
     this.inputCommentChange = this.inputCommentChange.bind(this);
@@ -84,22 +84,58 @@ class FrontApp extends React.Component {
   }
 
   handleComment(postId, comment){
-      // alert(comment);
-      $.post("http://localhost:3001/socialservice/postcomment/"+postId,
-            {
-              "name": this.state.username,
-              "userId": this.state.userId,
-              "postid": this.state.postid,
-              "comment": comment,
-            },
-            function(data, status){
-              if(data.msg===''){
-                alert("success!");
-              }
-              else{
-                alert("fail!");
-              }
-            });
+      $.ajax({
+        type: 'POST',
+        url: "http://localhost:3001/socialservice/postcomment/"+postId,
+        data: {
+          "userId": this.state.userId,
+          "name": this.state.username,
+          "content": comment,
+        },
+        success: function(data){
+          var commentList = this.state.commentList;
+          commentList.push(data.result);
+          this.setState({commentList: commentList});
+        }.bind(this),
+        error: function(data){
+          alert("fail!");
+        }.bind(this),
+      });
+
+  }
+
+  handleDelComment(commentId, name){
+    var canDelete = false;
+    for(var i=0;i<this.state.commentList.length;i++){
+      if(commentId === this.state.commentList[i]._id && this.state.commentList[i].name===this.state.username){
+        canDelete = true;
+      }
+    }
+    if(canDelete===true){
+      var confirmation = window.confirm('Are you sure you want to delete this comment?');
+      if(confirmation===true){
+        $.ajax({
+        type: 'DELETE',
+        url: "http://localhost:3001/socialservice/deletecomment/"+commentId,
+        success: function(data){
+          var commentList = this.state.commentList;
+          var index = -1;
+          for(var i=0;i<commentList.length;i++){
+            if(commentList[i]._id == commentId){
+              index = i;
+              break;
+            }
+          }
+          commentList.splice(i,1);
+          this.setState({commentList: commentList});
+        }.bind(this),
+        error: function(xhr, ajaxOptions, thrownError){
+          alert(xhr.status);
+          alert(thrownError);
+        }.bind(this)
+      });
+      }
+    }
   }
 
   handleStar(friendId){
@@ -174,7 +210,7 @@ class FrontApp extends React.Component {
     if(this.state.cookieSet===false){
       return (
         <div id="wrapper">
-          <h2>MyApp</h2>
+          <h2>MyApp</h2><br/>
           <SigninForm
             inputUN = {this.state.inputUN}
             inputPW = {this.state.inputPW}
@@ -195,6 +231,7 @@ class FrontApp extends React.Component {
             handleLogout = {this.handleLogout}
             handleDisplayInfo = {this.handleDisplayInfo}
           />
+          <div id="lower">
           <StarredFriends
             friends = {this.state.friendList}
           />
@@ -215,6 +252,7 @@ class FrontApp extends React.Component {
             address = {this.state.address}
             finishUpdate = {this.finishUpdate}
           />
+          </div>
         </div>
       );
     }
@@ -243,13 +281,13 @@ class SigninForm extends React.Component {
 
   render(){
     return(
-      <div>
+      <div id="signinform">
       <form>
-        Username: <input type="text"
+        <span className="un">Username:</span> <input type="text"
                          value={this.props.inputUN}
                          onChange={this.inputUNChange}
                          /><br/>
-        Password: <input type="password"
+        <span className="pw">Password:</span> <input type="password"
                          value={this.props.inputPW}
                          onChange={this.inputPWChange}
                          /><br/>
@@ -310,7 +348,7 @@ class InfoBar extends React.Component {
           <img id="barimg" src={this.props.icon} />
           <div id="barusername">{this.props.username}</div>
         </div>
-        <button id="barlogout" onClick={this.handleLogout}>Log out</button>
+        <div><button id="barlogout" onClick={this.handleLogout}>Log out</button></div>
       </div>
     );
   }
@@ -347,8 +385,8 @@ class PostArea extends React.Component {
   handleComment(postId, comment){
     this.props.handleComment(postId, comment);
   }
-  handleDelComment(postId, comment){
-    this.props.handleDelComment(postId, comment);
+  handleDelComment(commentId){
+    this.props.handleDelComment(commentId);
   }
   saveInfo(e){
     e.preventDefault();
@@ -357,23 +395,40 @@ class PostArea extends React.Component {
     var newHomeNumber = this.state.inputHN;
     var newAddress = this.state.inputADDR;
 
-    $.post("http://localhost:3001/socialservice/saveuserprofile",
-            {
-              "newMobileNumber": newMobileNumber,
-              "newHomeNumber": newHomeNumber,
-              "newAddress": newAddress,
-              "userId": this.props.userId
-            },
-            function(data, status){
-              if(data.msg!=''){
-                alert("error setting profile!");
-              }
-              else{
-                this.props.finishUpdate(newMobileNumber, newHomeNumber, newAddress);
-              }
-            }.bind(this)
-          );
-
+    $.ajax({
+      type: 'PUT',
+      url: "http://localhost:3001/socialservice/saveuserprofile",
+      data: {
+        "newMobileNumber": newMobileNumber,
+        "newHomeNumber": newHomeNumber,
+        "newAddress": newAddress,
+        "userId": this.props.userId,
+      },
+      dataType: 'json',
+      success: function(data){
+        this.props.finishUpdate(newMobileNumber, newHomeNumber, newAddress);
+      }.bind(this),
+      error: function(xhr, ajaxOptions, thrownError){
+        alert(xhr.status);
+        alert(thrownError);
+      }.bind(this)
+    });
+    // $.post("http://localhost:3001/socialservice/saveuserprofile",
+    //         {
+    //           "newMobileNumber": newMobileNumber,
+    //           "newHomeNumber": newHomeNumber,
+    //           "newAddress": newAddress,
+    //           "userId": this.props.userId
+    //         },
+    //         function(data, status){
+    //           if(data.msg!=''){
+    //             alert("error setting profile!");
+    //           }
+    //           else{
+    //             this.props.finishUpdate(newMobileNumber, newHomeNumber, newAddress);
+    //           }
+    //         }.bind(this)
+    //       );
 
   }
   inputMNChange(e){
@@ -421,23 +476,23 @@ class PostArea extends React.Component {
       });
 
       return(
-        <div>
+        <div id="PostArea">
           {temp_posts}
         </div>
       )
     }
     else{
       return(
-        <div>
+        <div id="profile">
           <div>
-            <img src={this.props.icon}></img>
-            <span>{this.props.name}</span>
+            <img className="barimg" src={this.props.icon}></img>
+            <span class="barusername">{this.props.name}</span>
           </div>
-          <form>
-            Mobile number:<input type="text" value={this.state.inputMN} onChange={this.inputMNChange}></input><br/>
-            Home number:<input type="text" value={this.state.inputHN} onChange={this.inputHNChange}></input><br/>
-            Mailing address:<input type="text" value={this.state.inputADDR} onChange={this.inputADDRChange}></input><br/>
-            <button onClick={this.saveInfo}>Save</button>
+          <form id="up">
+            <span id="mn">Mobile number:</span><input type="text" value={this.state.inputMN} onChange={this.inputMNChange}></input><br/>
+            <span id="hn">Home number:</span><input type="text" value={this.state.inputHN} onChange={this.inputHNChange}></input><br/>
+            <span id="ma">Mailing address:</span><input type="text" value={this.state.inputADDR} onChange={this.inputADDRChange}></input><br/>
+            <button id="save" onClick={this.saveInfo}>Save</button>
           </form>
         </div>
       )
@@ -462,9 +517,11 @@ class Post extends React.Component {
     // alert(this.props.post._id + "  " + this.state.inputComment);
     e.preventDefault();
     this.props.handleComment(this.props.post._id, this.state.inputComment);
+    this.setState({inputComment: ''});
   }
   handleDelComment(e){
-    this.props.handleDelComment(e);
+    e.preventDefault();
+    this.props.handleDelComment(e.target.id);
   }
   handleStar(e){
     this.props.handleStar(this.props.post.userId);
@@ -474,10 +531,13 @@ class Post extends React.Component {
   }
   render(){
     var comment_list = [];
-    // this.props.post.comments;
     this.props.post.comments.map((comment) => {
       comment_list.push(
-        <p>{comment.postTime} {comment.name} said: {comment.content}</p>
+        <p onDoubleClick={this.handleDelComment} id={comment._id}>
+          <span className="pt" id={comment._id}>{comment.postTime} </span>
+          <span className="pn" id={comment._id}>{comment.name}</span> <span class="t" id={comment._id}>said: </span>
+          <span className="cc" id={comment._id}>{comment.content}</span>
+        </p>
       );
     });
     if(this.props.post.starred=='Y'){
@@ -489,15 +549,24 @@ class Post extends React.Component {
 
     return (
       <div className="post">
-        {this.props.post.name}<br/>
-        <img src={imgpath} onClick={this.handleStar} rel={this.props.post.userId}></img><br/>
-        {this.props.post.time}<br/>
-        {this.props.post.location}<br/>
-        {this.props.post.content}<br/>
-        {this.props.post.icon}<br/>
-        {comment_list}
-        <input placeholder="Enter your comment here" type="text" value={this.state.inputComment} rel={this.props.post._id} onChange={this.inputCommentChange}></input>
-        <button onClick={this.handleComment}>submit</button><br/><br/>
+        <div className="a">
+          <div className="icon">
+            <img src={this.props.post.icon}></img><br/>
+          </div>
+          <div className="b">
+            <span className="pn">{this.props.post.name}</span>
+            <img className="star" src={imgpath} onClick={this.handleStar} rel={this.props.post.userId}></img><br/>
+
+            <span className="pt">{this.props.post.time}</span>
+            <span className="pl">{this.props.post.location}</span>
+            <p className="postContent">{this.props.post.content}</p>
+          </div>
+        </div>
+        <div className="comment">{comment_list}</div>
+        <div className="inputComment">
+          <input className="c" placeholder="Enter your comment here" type="text" value={this.state.inputComment} rel={this.props.post._id} onChange={this.inputCommentChange}></input>
+          <button onClick={this.handleComment}>submit</button><br/><br/>
+        </div>
       </div>
     );
 
