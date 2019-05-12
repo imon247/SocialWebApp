@@ -1,9 +1,11 @@
 var express = require('express');
 var router = express.Router();
 
-var Day = ['Mon', 'Tue', 'Wed', 'Thur', 'Fri', 'Sat', 'Sun'];
+var Day = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 var Month = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
+var Day_ = {"Mon": 0, "Tue": 1, "Wed": 2, "Thu": 3, "Fri": 4, "Sat": 5, "Sun": 6};
+var Month_ = {'Jan': 0, 'Feb': 1, 'Mar': 2, 'Apr':3, 'May':4, 'Jun':5, 'Jul':6, 'Aug':7, 'Sep':8, 'Oct':9, 'Nov':10, 'Dec':11};
 router.post('/signin', function(req, res){
   var db = req.db;
   var userList = db.get('userList');
@@ -213,7 +215,6 @@ router.post('/updatestar/:friendid', function(req, res){
   var friends;
   userList.findOne(filter, {}, function(err, docs){
     if(err===null){
-      console.log("filter successfully!");
       friends = docs.friends;
       for(var i=0;i<friends.length;i++){
         if(friends[i].friendId===targetFriend){
@@ -253,7 +254,7 @@ router.post('/postcomment/:postid', function(req,res){
   var comment = {
     "postId": postId,
     "userId": userId,
-    "postTime": postTime.getHours()+':'+postTime.getMinutes()+' ' + Day[postTime.getDay()] + ' ' + Month[postTime.getMonth()] + ' ' + postTime.getDate() + ' ' +postTime.getFullYear(),
+    "postTime": postTime.getHours()+':'+postTime.getMinutes()+':'+postTime.getSeconds()+' ' + Day[postTime.getDay()] + ' ' + Month[postTime.getMonth()] + ' ' + postTime.getDate() + ' ' +postTime.getFullYear(),
     "content": content,
     "deleteTime": '',
   };
@@ -277,8 +278,10 @@ router.delete('/deletecomment/:commentid', function(req, res){
   // var userId = req.cookies['userId'];
   var filter = {"_id": req.params.commentid};
   res.set({"Access-Control-Allow-Origin": "http://localhost:3000"});
+  var time = new Date();
+  var time = time.getHours()+':'+time.getMinutes()+':'+time.getSeconds()+' ' + Day[time.getDay()] + ' ' + Month[time.getMonth()] + ' ' + time.getDate() + ' ' +time.getFullYear();
   commentList.update(filter,
-                     {$set: {"deleteTime": new Date()}},
+                     {$set: {"deleteTime": time}},
                      function(err, result){
                        res.send((err===null) ? {msg: ''} : {msg: err});
                      }
@@ -286,49 +289,99 @@ router.delete('/deletecomment/:commentid', function(req, res){
 });
 
 
-
-/* to be implemented */
-router.get('/loadcommentupdates', function(req, res){
+router.get('/loadcommentupdates/:userid', function(req, res){
   var db = req.db;
   var commentList = db.get('commentList');
   var userList = db.get('userList');
   var postList = db.get('postList');
 
-  // var newComments = [];
-  var target_user = userList.findOne({"_id": req.cookies['userId']});
-  var lastCommentRetrievalTime = target_user.lastCommentRetrievalTime;
-  var friends = target_user.friends;
-  var post_ids = [];
-  for(var i=0;i<friends.length;i++){
-    var postsOfHis = postList.find({"userId": friends[i].friendId});
-    for(var j=0;j<postsOfHis.length;j++){
-        post_ids.push(postsOfHis[j]._id.str);
-    }
-  }
+  res.set({
+      "Access-Control-Allow-Origin": "http://localhost:3000",
+  });
 
-  var newComments = [];
-  var deletedComments = [];
-  for(var i=0;i<post_ids.length;i++){
-    var comments_of_post = commentList.find({"postId": post_ids[i]});
-    for(var j=0;j<comments_of_post.length;j++){
-      if(comments_of_post[i].postTime > lastCommentRetrievalTime){
-        if(comments_of_post[i].deleteTime === ''){
-          newComments.push(comments_of_post[j]);
+  var friends = [];
+  var comments = [];
+  var lastCommentRetrievalTime;
+  var filter = {"_id": req.params.userid};
+  userList.findOne(filter, {}, function(err, docs){
+    if(err===null){
+      console.log("!!!!!!!!:"+docs.friends);
+      friends = docs.friends;
+      lastCommentRetrievalTime = docs.lastCommentRetrievalTime;
+    }
+    else{
+      res.send({msg: err});
+    }
+  }).then(function(){
+    commentList.find({}, {}, function(err, docs){
+      if(err===null){
+        var all_comments = docs;
+        for(var i=0;i<all_comments.length;i++){
+          for(var j=0;j<friends.length;j++){
+            var temp = compareTime(all_comments[i].postTime,lastCommentRetrievalTime) || compareTime(all_comments[i].deleteTime, lastCommentRetrievalTime);
+            if(all_comments[i].userId==friends[j].friendId && temp){
+              comments.push(all_comments[i]);
+              break;
+            }
+          }
         }
-        else{
-          deletedComments.push(comments_of_post[j]._id.str);
-        }
+        /* update the last comment retrieval time */
+        var time = new Date();
+        var time = time.getHours()+':'+time.getMinutes()+':'+time.getSeconds()+' ' + Day[time.getDay()] + ' ' + Month[time.getMonth()] + ' ' + time.getDate() + ' ' +time.getFullYear();
+
+        userList.update(filter,
+                        {$set: {"lastCommentRetrievalTime": time}},
+                        function(err, result){
+                          if(err===null){
+                            console.log(comments);
+                            res.send({comments: comments});
+                          }
+                          else{
+                            res.send({msg: err});
+                          }
+                        });
+
       }
-    }
-  }
-
-  userList.update({"_id": req.cookies['userId']}, {$set: {"lastCommentRetrievalTime": new Date()}});
-
-  res.send({newComments: newComments,
-            deletedComments: deletedComments});
+      else{
+        res.send({msg: err});
+      }
+    })
+  });
 });
 
+function compareTime(t1, t2){
+  var t1 = t1.split();
+  var t2 = t2.split();
+  var y1 = t1[4];
+  var y2 = t2[4];
+  if(y1>y2){
+    console.log(y1, y2);
+    return true;
+  }
+  else if(Month_[t1[2]]>Month_[t2[2]]){
+    console.log("true2!");
+    return true;
+  }
+  else if(t1[3]> t2[3]){
+    console.log(t1[3], t2[3]);
+    return true;
+  }
+  else if(t1[0].split(':')[0] > t2[0].split(':')[0]){
+    console.log("true!3");
+    return true;
+  }
+  else if(t1[0].split(':')[1] > t2[0].split(':')[1]){
+    console.log("true!4");
+    return true;
+  }
+  else if(t1[0].split(':')[2] > t2[0].split(':')[2]){
+    console.log("true!5");
+    return true;
+  }
 
+  return false;
+
+}
 
 
 

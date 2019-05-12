@@ -34,10 +34,57 @@ class FrontApp extends React.Component {
     this.handleStar = this.handleStar.bind(this);
     this.signin = this.signin.bind(this);
     this.finishUpdate = this.finishUpdate.bind(this);
+    this.updateComment = this.updateComment.bind(this);
   }
 
-  loadHome(){
+  componentDidMount() {
+    setInterval(this.updateComment, 3000);
+  }
 
+  updateComment(){
+    if(this.state.cookieSet===true){
+      $.ajax({
+        type: 'GET',
+        url: "http://localhost:3001/socialservice/loadcommentupdates/"+this.state.userId,
+        success: function(data){
+          var comments = data.comments;
+          for(var i=0;i<comments.length;i++){
+            for(var j=0;j<this.state.friendList.length;j++){
+              if(comments[i].userId==this.state.friendList[j]._id){
+                comments.name = this.state.friendList[j].name;
+              }
+            }
+          }
+          var current_comments = this.state.commentList;
+          for(var i=current_comments.length-1;i>=0;i--){
+            for(var j=comments.length-1;j>=0;j--){
+              if(comments[j]._id == current_comments[i]._id && comments[j].deleteTime!=''){
+                current_comments.splice(i, 1);
+                comments.splice(j,1);
+                break;
+              }
+            }
+          }
+          for(var i=0;i<comments.length;i++){
+            var push = true;
+            for(var j=0;j<current_comments.length;j++){
+              if(current_comments[j]._id == comments[i]._id){
+                push = false;
+                break;
+              }
+            }
+            if(push==true){
+              current_comments.push(comments[i]);
+            }
+
+          }
+          this.setState({commentList: current_comments});
+        }.bind(this),
+        error: function(data){
+          alert("fail!");
+        }.bind(this),
+      });
+    }
   }
 
   inputUNChange(username){
