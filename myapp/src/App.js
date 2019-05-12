@@ -57,21 +57,31 @@ class FrontApp extends React.Component {
 
   handleLogout(){
     /* send logout request to server */
-    this.setState({
-      userId: '',
-      username: '',
-      icon: '',
-      mobileNumber: '',
-      homeNumber: '',
-      address: '',
-      postList : [],
-      friendList : [],
-      commentList : [],
-      cookieSet : false,
-      inputUN : '',
-      inputPW : '',
-      inputComment: '',
-      rightDivision: "posts",
+    $.ajax({
+      type: 'GET',
+      url: "http://localhost:3001/socialservice/logout/"+this.state.userId,
+      success: function(data){
+        this.setState({
+          userId: '',
+          username: '',
+          icon: '',
+          mobileNumber: '',
+          homeNumber: '',
+          address: '',
+          postList : [],
+          friendList : [],
+          commentList : [],
+          cookieSet : false,
+          inputUN : '',
+          inputPW : '',
+          inputComment: '',
+          rightDivision: "posts",
+        });
+      }.bind(this),
+      error: function(xhr, ajaxOptions, thrownError){
+        alert(xhr.status);
+        alert(thrownError);
+      }.bind(this)
     });
   }
 

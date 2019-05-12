@@ -23,16 +23,22 @@ router.post('/signin', function(req, res){
   var posts = [];
   var comments = [];
   var errorMsg = '';
+  var found = false;
 
-
-  // console.log("input username is: "+username);
-  // console.log("input password is: "+password);
-  // var index;
-  var filter = {"name": "imon247", "password": "985247"};
   userList.find({}, {}, function(err, docs){              /* get all users */
     if(err===null){
       all_users = docs;
-      console.log(all_users);
+      for(var i=0;i<all_users.length;i++){
+        if(all_users[i].name===username && all_users[i].password===password){
+          user = all_users[i];
+          friends = all_users[i].friends;
+          /* set cookie of the user */
+          res.cookie('userId', user._id);
+          console.log("set cookie succesfully: "+user._id);
+          found = true;
+        }
+      }
+
     }
     else{
       res.send({msg: err});
@@ -40,8 +46,9 @@ router.post('/signin', function(req, res){
   }).then(function(){
     postList.aggregate([{$sort:{time: -1}}], function(err, docs){             /* get all posts */
       if(err===null){
+        console.log("all posts:");
+        console.log(docs);
         all_posts = docs;
-        // console.log(all_posts);
       }
       else{
         res.send({msg: err});
@@ -52,19 +59,6 @@ router.post('/signin', function(req, res){
       if(err===null){
         all_comments = docs;
 
-        var found = false;
-        for(var i=0;i<all_users.length;i++){
-          if(all_users[i].name===username && all_users[i].password===password){
-            user = all_users[i];
-            // console.log(user);
-            friends = all_users[i].friends;
-            /* set cookie of the user */
-            res.cookie('userId', user._id);
-            // console.log(friends);
-            console.log("set cookie succesfully: "+user._id);
-            found = true;
-          }
-        }
         /* username and password match */
         if(found===true){
           /* modify the friends array to include name and icon */
@@ -77,7 +71,6 @@ router.post('/signin', function(req, res){
               }
             }
           }
-          // console.log(friends);
 
           /* get posts of user's friend from all_posts */
           for(var i=0;i<all_posts.length;i++){
@@ -151,12 +144,13 @@ router.post('/signin', function(req, res){
 });
 
 
-router.get('/logout', function(req, res){
+router.get('/logout/:userid', function(req, res){
   var db = req.db;
   var userList = db.get('userList');
   res.set({"Access-Control-Allow-Origin": "http://localhost:3000"});
   res.cookie('userId', '');
-  userList.update({"_id": req.params.id},
+  console.log("the cookie variable is: "+req.params.userid);
+  userList.update({"_id": req.cookies['userId']},
                   {$set: {"lastCommentRetrievalTime": ''}},
                   function(err, result){
                       res.send((err === null) ? { msg: '' } : { msg: err });
