@@ -470,22 +470,6 @@ class PostArea extends React.Component {
         alert(thrownError);
       }.bind(this)
     });
-    // $.post("http://localhost:3001/socialservice/saveuserprofile",
-    //         {
-    //           "newMobileNumber": newMobileNumber,
-    //           "newHomeNumber": newHomeNumber,
-    //           "newAddress": newAddress,
-    //           "userId": this.props.userId
-    //         },
-    //         function(data, status){
-    //           if(data.msg!=''){
-    //             alert("error setting profile!");
-    //           }
-    //           else{
-    //             this.props.finishUpdate(newMobileNumber, newHomeNumber, newAddress);
-    //           }
-    //         }.bind(this)
-    //       );
 
   }
   inputMNChange(e){

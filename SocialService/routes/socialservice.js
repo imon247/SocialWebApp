@@ -1,4 +1,5 @@
 var express = require('express');
+var cookieParser = require('cookie-parser');
 var router = express.Router();
 
 var Day = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
@@ -151,7 +152,7 @@ router.get('/logout/:userid', function(req, res){
   var userList = db.get('userList');
   res.set({"Access-Control-Allow-Origin": "http://localhost:3000"});
   res.cookie('userId', '');
-  console.log("the cookie variable is: "+req.params.userid);
+  console.log("the cookie variable is: "+req.cookies['userId']);
   userList.update({"_id": req.cookies['userId']},
                   {$set: {"lastCommentRetrievalTime": ''}},
                   function(err, result){
